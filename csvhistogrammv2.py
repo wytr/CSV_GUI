@@ -179,6 +179,7 @@ class Ui_MainWindow(object):
         global filepath
         filepath = file_name
         print(filepath)
+        ui.statusbar.showMessage("PATH: "+ filepath)
         
     def spin_box_value_changed(self):
         global spalte
@@ -197,5 +198,6 @@ if __name__ == "__main__":
     MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()
     ui.setupUi(MainWindow)
+    ui.statusbar.showMessage("PATH: "+ filepath)
     MainWindow.show()
     sys.exit(app.exec_())
