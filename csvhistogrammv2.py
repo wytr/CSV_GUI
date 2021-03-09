@@ -1,0 +1,201 @@
+#TODO -> errorhandling
+
+
+
+import sys
+import csv
+#import pandas as pd
+#import numpy as np
+#import random
+
+#from matplotlib import pyplot as plt
+from mplwidget import MplWidget
+
+#from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QTextEdit, QPushButton, QLabel, QVBoxLayout
+from PyQt5.QtCore import QDir
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QMessageBox
+
+filepath = 'random.csv'
+
+spalte = 1
+bins = []
+costumbins = True
+
+class Ui_MainWindow(object):
+    
+    def setupUi(self, MainWindow):
+        MainWindow.setObjectName("MainWindow")
+        MainWindow.resize(641, 607)
+        self.centralwidget = QtWidgets.QWidget(MainWindow)
+        self.centralwidget.setObjectName("centralwidget")
+        
+        self.gridLayoutWidget = QtWidgets.QWidget(self.centralwidget)
+        self.gridLayoutWidget.setGeometry(QtCore.QRect(20, 430, 601, 121))
+        self.gridLayoutWidget.setObjectName("gridLayoutWidget")
+        
+        self.gridLayout = QtWidgets.QGridLayout(self.gridLayoutWidget)
+        self.gridLayout.setContentsMargins(0, 0, 0, 0)
+        self.gridLayout.setObjectName("gridLayout")
+        
+        self.label_costum_bins = QtWidgets.QLabel(self.gridLayoutWidget)
+        self.label_costum_bins.setToolTip("")
+        self.label_costum_bins.setObjectName("label_costum_bins")
+        
+        self.gridLayout.addWidget(self.label_costum_bins, 0, 0, 1, 1)
+        
+        self.column_of_content = QtWidgets.QSpinBox(self.gridLayoutWidget)
+        self.column_of_content.setObjectName("column_of_content")
+        self.column_of_content.setValue(1)
+        
+        self.gridLayout.addWidget(self.column_of_content, 1, 1, 1, 1)
+        
+        self.checkBox_costum_bins = QtWidgets.QCheckBox(self.gridLayoutWidget)
+        self.checkBox_costum_bins.setText("")
+        self.checkBox_costum_bins.setObjectName("checkBox_costum_bins")
+        self.checkBox_costum_bins.setChecked(True)
+        
+        self.gridLayout.addWidget(self.checkBox_costum_bins, 0, 1, 1, 1)
+        self.label_coc = QtWidgets.QLabel(self.gridLayoutWidget)
+        self.label_coc.setObjectName("label_coc")
+        self.gridLayout.addWidget(self.label_coc, 1, 0, 1, 1)
+        
+        self.lineEdit = QtWidgets.QLineEdit(self.gridLayoutWidget)
+        self.lineEdit.setObjectName("lineEdit")
+        self.lineEdit.setText("10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120")
+        self.costum_bins_values()
+        
+        self.gridLayout.addWidget(self.lineEdit, 0, 2, 1, 1)
+        self.button_creat_histogram = QtWidgets.QPushButton(self.gridLayoutWidget)
+        self.button_creat_histogram.setObjectName("button_creat_histogram")
+        self.gridLayout.addWidget(self.button_creat_histogram, 1, 2, 1, 1)
+        self.MplWidget = MplWidget(self.centralwidget)
+        self.MplWidget.setGeometry(QtCore.QRect(20, 20, 600, 400))
+        self.MplWidget.setMinimumSize(QtCore.QSize(600, 400))
+        self.MplWidget.setObjectName("MplWidget")
+        MainWindow.setCentralWidget(self.centralwidget)
+        self.menubar = QtWidgets.QMenuBar(MainWindow)
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 641, 21))
+        self.menubar.setObjectName("menubar")
+        self.menuFile = QtWidgets.QMenu(self.menubar)
+        self.menuFile.setObjectName("menuFile")
+        self.menuHelp = QtWidgets.QMenu(self.menubar)
+        self.menuHelp.setObjectName("menuHelp")
+        MainWindow.setMenuBar(self.menubar)
+        self.statusbar = QtWidgets.QStatusBar(MainWindow)
+        self.statusbar.setObjectName("statusbar")
+        MainWindow.setStatusBar(self.statusbar)
+        
+        self.actionOpen = QtWidgets.QAction(MainWindow)
+        self.actionOpen.setObjectName("actionOpen")
+
+        self.actionSave = QtWidgets.QAction(MainWindow)
+        self.actionSave.setObjectName("actionSave")
+        self.menuFile.addAction(self.actionOpen)
+        self.menubar.addAction(self.menuFile.menuAction())
+        self.menubar.addAction(self.menuHelp.menuAction())
+        
+        #Signals
+        self.lineEdit.editingFinished.connect(self.costum_bins_values)
+        self.button_creat_histogram.clicked.connect(self.update_graph)
+        self.column_of_content.valueChanged.connect(self.spin_box_value_changed)
+        self.actionOpen.triggered.connect(self.file_open)
+
+        self.retranslateUi(MainWindow)
+        QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+    def retranslateUi(self, MainWindow):
+        _translate = QtCore.QCoreApplication.translate
+        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        self.label_costum_bins.setText(_translate("MainWindow", "Costum bins"))
+        self.label_coc.setText(_translate("MainWindow", "column of content"))
+        self.lineEdit.setToolTip(_translate("MainWindow", "format example: 0, 10, 20, 30,..."))
+        self.button_creat_histogram.setText(_translate("MainWindow", "Create Histogram"))
+        self.menuFile.setTitle(_translate("MainWindow", "File"))
+        self.menuHelp.setTitle(_translate("MainWindow", "Help"))
+        self.actionOpen.setText(_translate("MainWindow", "Open"))
+        self.actionSave.setText(_translate("MainWindow", "Save"))
+        
+    def update_graph(self):
+        global spalte
+        global bins
+        ref = []
+        scan_code = []
+        len_code = []
+        print(bins)
+        
+        costumbins = self.checkBox_costum_bins.isChecked()
+
+        self.MplWidget.canvas.axes.clear()
+        #Erste Spalte
+        try:
+            
+            with open(filepath, 'r') as csv_file:
+                csv_reader = csv.reader(csv_file)
+                
+                print(filepath)
+                # use 'next(csv_reader)' to skip first entry
+                for line in csv_reader:
+                    
+                    #skipping empty cells
+                    if str(line[spalte]) == "":
+                        continue
+                    
+                    ref.append(str(line[0]))
+                    
+                    scan_code.append(str(line[spalte]))
+                    
+                for idx, item in enumerate(scan_code):
+                    #print(idx,ref[idx],scan_code[idx], len(item))
+                    len_code.append(len(item))
+            once = list(set(len_code))
+            once.sort()
+    
+            for idx, items in enumerate(once):
+               #print(once[idx])
+                if costumbins == True:
+                    self.MplWidget.canvas.axes.hist(len_code,bins = bins, edgecolor='black')
+                else:
+                    self.MplWidget.canvas.axes.hist(len_code, edgecolor='black')
+                
+            self.MplWidget.canvas.axes.set_title('Histogramm der Codelänge')
+            #self.MplWidget.canvas.axes.legend(('cosinus', 'sinus'),loc='upper right')
+            #self.MplWidget.canvas.axes.set_title('Cosinus - Sinus Signal')
+            
+    
+            self.MplWidget.canvas.draw()
+        except:
+            msg = QMessageBox()
+            msg.setWindowTitle("UFF!")
+            msg.setText("Da hat etwas nicht funktioniert.")
+            msg.setIcon(QMessageBox.Critical)
+            x = msg.exec()
+            
+            
+    def file_open(self):
+        
+        file_name, _ = QFileDialog.getOpenFileName(None,'Open File',r"C:\\", "CSV FILES(*.csv)")
+        global filepath
+        filepath = file_name
+        print(filepath)
+        
+    def spin_box_value_changed(self):
+        global spalte
+        spalte = self.column_of_content.value()
+        print("spalte: {}".format(spalte))
+    
+    def costum_bins_values(self):
+        L = [int(x) for x in (self.lineEdit.text()).split(', ')] 
+        print("\nThe values of input are", L)
+        global bins
+        bins = L
+
+if __name__ == "__main__":
+    #import sys
+    app = QtWidgets.QApplication(sys.argv)
+    MainWindow = QtWidgets.QMainWindow()
+    ui = Ui_MainWindow()
+    ui.setupUi(MainWindow)
+    MainWindow.show()
+    sys.exit(app.exec_())
